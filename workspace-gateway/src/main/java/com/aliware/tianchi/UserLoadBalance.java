@@ -2,13 +2,18 @@ package com.aliware.tianchi;
 
 import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.utils.AtomicPositiveInteger;
 import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -23,6 +28,9 @@ public class UserLoadBalance implements LoadBalance {
 
     Random  random = new Random();
 
+    private final ConcurrentMap<String, AtomicPositiveInteger> sequences = new ConcurrentHashMap<String, AtomicPositiveInteger>();
+
+
     @Override
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
         if (invokers == null || invokers.isEmpty())
@@ -36,32 +44,56 @@ public class UserLoadBalance implements LoadBalance {
 
     //让子类实现doSelect
     private  <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation){
-        int length = invokers.size(); // Number of invokers
-        int totalWeight = 0; // The sum of weights
-        boolean sameWeight = true; // Every invoker has the same weight?
-        for (int i = 0; i < length; i++) {
+
+        String key = invokers.get(0).getUrl().getServiceKey() + "." + invocation.getMethodName(); //①获取轮询key(服务名+方法名)
+        int length = invokers.size(); // Number of invokers  ②获取可供调用的invokers个数
+        int maxWeight = 0; // The maximum weight 最大权重值  ③设置最大权重的默认值为0
+        int minWeight = Integer.MAX_VALUE; // The minimum weight 最小权重支持，默认最大
+        final LinkedHashMap<Invoker<T>, IntegerWrapper> invokerToWeightMap = new LinkedHashMap<Invoker<T>, IntegerWrapper>();
+        //权重值总数
+        int weightSum = 0;
+        for (int i = 0; i < length; i++) {//④遍历invokers，比较找出maxWeight和minWeight
+            //获取权重值
             int weight = getWeight(invokers.get(i), invocation);
-            totalWeight += weight; // Sum
-            if (sameWeight && i > 0
-                    && weight != getWeight(invokers.get(i - 1), invocation)) {
-                sameWeight = false;
+            //获取最大和最小权重值
+            maxWeight = Math.max(maxWeight, weight); // Choose the maximum weight
+            minWeight = Math.min(minWeight, weight); // Choose the minimum weight
+            if (weight > 0) {
+                invokerToWeightMap.put(invokers.get(i), new IntegerWrapper(weight));
+                weightSum += weight;
             }
         }
-        //如果提供者权重不一样，加权随机
-        if (totalWeight > 0 && !sameWeight) {
-            // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
-            int offset = random.nextInt(totalWeight);
-            // Return a invoker based on the random value.
-            for (int i = 0; i < length; i++) {
-                offset -= getWeight(invokers.get(i), invocation);
-                if (offset < 0) {
-                    return invokers.get(i);
+        //⑤如果权重不一样
+        AtomicPositiveInteger sequence = sequences.get(key);
+        if (sequence == null) {
+            sequences.putIfAbsent(key, new AtomicPositiveInteger());
+            //⑥根据key获取自增序列
+            sequence = sequences.get(key);
+        }
+
+        int currentSequence = sequence.getAndIncrement();
+        if (maxWeight > 0 && minWeight < maxWeight) {
+            //轮询当前值
+            //⑦自增序列加一与最大权重取模默认得到currentWeigth
+            int mod = currentSequence % weightSum;
+            for (int i = 0; i < maxWeight; i++) {
+                //轮询当前值的余数轮询从服务中获取
+                for (Map.Entry<Invoker<T>, IntegerWrapper> each : invokerToWeightMap.entrySet()) {
+                    final Invoker<T> k = each.getKey();
+                    final IntegerWrapper v = each.getValue();
+                    if (mod == 0 && v.getValue() > 0) {
+                        return k;
+                    }
+                    if (v.getValue() > 0) {
+                        v.decrement();
+                        mod--;
+                    }
                 }
             }
         }
-        //如果提供者权重都一样，普通随机
-        // If all invokers have the same weight value or totalWeight=0, return evenly.
-        return invokers.get(random.nextInt(length));
+        // Round robin
+        //直接轮询找服务
+        return invokers.get(currentSequence % length);//自增序列加一并与length取模，从invokers获取invoker
     }
 
     //计算预热权重
@@ -86,5 +118,25 @@ public class UserLoadBalance implements LoadBalance {
     static int calculateWarmupWeight(int uptime, int warmup, int weight) {
         int ww = (int) ((float) uptime / ((float) warmup / (float) weight));
         return ww < 1 ? 1 : (ww > weight ? weight : ww);
+    }
+
+    private static final class IntegerWrapper {
+        private int value;
+
+        public IntegerWrapper(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void setValue(int value) {
+            this.value = value;
+        }
+
+        public void decrement() {
+            this.value--;
+        }
     }
 }
