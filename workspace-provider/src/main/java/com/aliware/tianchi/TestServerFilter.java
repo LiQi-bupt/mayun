@@ -7,6 +7,8 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author daofeng.xjf
@@ -17,9 +19,12 @@ import org.apache.dubbo.rpc.RpcException;
  */
 @Activate(group = Constants.PROVIDER)
 public class TestServerFilter implements Filter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestServerFilter.class);
+    private static int count = 0;
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         try{
+            LOGGER.info(String.valueOf(++count));
             Result result = invoker.invoke(invocation);
             return result;
         }catch (Exception e){
