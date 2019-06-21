@@ -7,7 +7,6 @@ import org.apache.dubbo.rpc.listener.CallbackListener;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * @author daofeng.xjf
