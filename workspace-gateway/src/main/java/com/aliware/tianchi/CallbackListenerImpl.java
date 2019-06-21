@@ -1,10 +1,11 @@
 package com.aliware.tianchi;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -17,12 +18,12 @@ import java.util.Map;
  */
 public class CallbackListenerImpl implements CallbackListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CallbackListenerImpl.class);
-
+    private static Gson gson = new Gson();
 
     @Override
     public void receiveServerMsg(String msg) {
         try {
-            Map<String,String> status  = (Map)JSONObject.parse(msg);
+            Map<String,String> status  = gson.fromJson(msg, HashMap.class);
             Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
             Integer poolSize = Integer.parseInt(status.get("poolSize"));
             Integer activeCount = Integer.parseInt(status.get("activeCount"));

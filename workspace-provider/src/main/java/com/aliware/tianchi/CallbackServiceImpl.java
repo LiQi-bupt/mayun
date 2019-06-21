@@ -1,6 +1,6 @@
 package com.aliware.tianchi;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
 import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.bytecode.Proxy;
 import org.apache.dubbo.common.extension.ExtensionLoader;
@@ -21,8 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class CallbackServiceImpl implements CallbackService {
 
-    private static String ip;
-    private static String port;
+    private static Gson gson = new Gson();
 
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
@@ -46,7 +45,7 @@ public class CallbackServiceImpl implements CallbackService {
                             statusMap.put("poolSize",String.valueOf(tp.getPoolSize()));
                             statusMap.put("activeCount",String.valueOf(tp.getActiveCount()));
                             statusMap.put("quota",System.getProperty("quota"));
-                            entry.getValue().receiveServerMsg(JSONObject.toJSONString(statusMap));
+                            entry.getValue().receiveServerMsg(gson.toJson(statusMap));
                         } catch (Throwable t1) {
                             listeners.remove(entry.getKey());
                         }
