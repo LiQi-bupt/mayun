@@ -23,11 +23,15 @@ public class CallbackServiceImpl implements CallbackService {
 
     private static Gson gson = new Gson();
 
+    private static long startTime = System.currentTimeMillis();
+
+    private static int warmUpTime = 35*1000;
+
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (!listeners.isEmpty()) {
+                if ((System.currentTimeMillis() - startTime) < warmUpTime && !listeners.isEmpty()) {
                     for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
                         try {
                             DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
@@ -40,11 +44,11 @@ public class CallbackServiceImpl implements CallbackService {
                                     tp = (ThreadPoolExecutor) executor;
                                 }
                             }
-                            Map<String,String> statusMap = new HashMap<String, String>(16);
-                            statusMap.put("maxmumPoolSize",String.valueOf(tp.getMaximumPoolSize()));
-                            statusMap.put("poolSize",String.valueOf(tp.getPoolSize()));
-                            statusMap.put("activeCount",String.valueOf(tp.getActiveCount()));
-                            statusMap.put("quota",System.getProperty("quota"));
+                            Map<String, String> statusMap = new HashMap<String, String>(16);
+                            statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
+                            statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
+                            statusMap.put("activeCount", String.valueOf(tp.getActiveCount()));
+                            statusMap.put("quota", System.getProperty("quota"));
                             entry.getValue().receiveServerMsg(gson.toJson(statusMap));
                         } catch (Throwable t1) {
                             listeners.remove(entry.getKey());

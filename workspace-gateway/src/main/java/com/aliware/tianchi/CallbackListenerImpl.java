@@ -19,20 +19,21 @@ import java.util.Map;
 public class CallbackListenerImpl implements CallbackListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CallbackListenerImpl.class);
     private static Gson gson = new Gson();
-
+    public static boolean needWarmUP = true;
     @Override
     public void receiveServerMsg(String msg) {
-
-//        try {
-//            Map<String, String> status = gson.fromJson(msg, HashMap.class);
-//            Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
-//            Integer poolSize = Integer.parseInt(status.get("poolSize"));
-//            Integer activeCount = Integer.parseInt(status.get("activeCount"));
-//            String key = status.get("quota");
-//            UserLoadBalance.weightMap.put(key, maxmumPoolSize - activeCount);
-//        } catch (Exception e) {
-//            LOGGER.error(e);
-//        }
+        if (needWarmUP) {
+            try {
+                Map<String, String> status = gson.fromJson(msg, HashMap.class);
+                Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
+                Integer poolSize = Integer.parseInt(status.get("poolSize"));
+                Integer activeCount = Integer.parseInt(status.get("activeCount"));
+                String key = status.get("quota");
+                UserLoadBalance.weightMap.put(key, maxmumPoolSize - activeCount);
+            } catch (Exception e) {
+                LOGGER.error(e);
+            }
+        }
         LOGGER.info("receive msg from server :" + msg);
     }
 

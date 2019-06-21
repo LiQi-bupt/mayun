@@ -33,6 +33,10 @@ public class UserLoadBalance implements LoadBalance {
 
     public static ConcurrentHashMap<String,Integer> weightMap = new ConcurrentHashMap<>(16);
 
+    private static long startTime = System.currentTimeMillis();
+
+    private static int warmUpTime = 35*1000;
+
     static {
         weightMap.put("small",200);
         weightMap.put("medium",450);
@@ -85,6 +89,13 @@ public class UserLoadBalance implements LoadBalance {
         Integer weight = weightMap.get(key);
         if(weight == null){
             weight = defaultWeight;
+        }
+        //预热时间30秒
+        int uptime = (int) (System.currentTimeMillis() - startTime);
+        if (uptime > 0 && uptime < warmUpTime) {
+            weight = calculateWarmupWeight(uptime, warmUpTime, weight);
+        } else {
+            CallbackListenerImpl.needWarmUP = false;
         }
         LOGGER.info("weight :"+key+":"+weight);
 //        if (weight > 0) {
