@@ -1,13 +1,16 @@
 package com.aliware.tianchi;
 
+import com.alibaba.fastjson.JSONObject;
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.bytecode.Proxy;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.store.DataStore;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 import org.apache.dubbo.rpc.service.CallbackService;
-
-import java.util.Date;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author daofeng.xjf
@@ -18,6 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CallbackServiceImpl implements CallbackService {
 
+    private static String ip;
+    private static String port;
+
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
             @Override
@@ -25,7 +31,22 @@ public class CallbackServiceImpl implements CallbackService {
                 if (!listeners.isEmpty()) {
                     for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
                         try {
-                            entry.getValue().receiveServerMsg(System.getProperty("quota") + " " + new Date().toString());
+                            DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
+                            Map<String, Object> executors = dataStore.get(Constants.EXECUTOR_SERVICE_COMPONENT_KEY);
+
+                            ThreadPoolExecutor tp = null;
+                            for (Map.Entry<String, Object> entry2 : executors.entrySet()) {
+                                ExecutorService executor = (ExecutorService) entry2.getValue();
+                                if (executor instanceof ThreadPoolExecutor) {
+                                    tp = (ThreadPoolExecutor) executor;
+                                }
+                            }
+                            Map<String,String> statusMap = new HashMap<String, String>(16);
+                            statusMap.put("maxmumPoolSize",String.valueOf(tp.getMaximumPoolSize()));
+                            statusMap.put("poolSize",String.valueOf(tp.getPoolSize()));
+                            statusMap.put("activeCount",String.valueOf(tp.getActiveCount()));
+                            statusMap.put("quota",System.getProperty("quota"));
+                            entry.getValue().receiveServerMsg(JSONObject.toJSONString(statusMap));
                         } catch (Throwable t1) {
                             listeners.remove(entry.getKey());
                         }

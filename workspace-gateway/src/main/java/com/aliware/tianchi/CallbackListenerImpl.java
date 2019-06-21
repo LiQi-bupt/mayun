@@ -1,6 +1,11 @@
 package com.aliware.tianchi;
 
+import com.alibaba.fastjson.JSONObject;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.rpc.listener.CallbackListener;
+
+import java.util.Map;
 
 /**
  * @author daofeng.xjf
@@ -11,10 +16,23 @@ import org.apache.dubbo.rpc.listener.CallbackListener;
  *
  */
 public class CallbackListenerImpl implements CallbackListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CallbackListenerImpl.class);
+
 
     @Override
     public void receiveServerMsg(String msg) {
-        System.out.println("receive msg from server :" + msg);
+        try {
+            Map<String,String> status  = (Map)JSONObject.parse(msg);
+            Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
+            Integer poolSize = Integer.parseInt(status.get("poolSize"));
+            Integer activeCount = Integer.parseInt(status.get("activeCount"));
+            String key = status.get("quota");
+            UserLoadBalance.weightMap.put(key,maxmumPoolSize-activeCount);
+        } catch (Exception e){
+            LOGGER.error(e);
+        }
+
+        LOGGER.info("receive msg from server :" + msg);
     }
 
 }
