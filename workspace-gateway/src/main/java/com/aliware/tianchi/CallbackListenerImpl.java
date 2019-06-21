@@ -7,6 +7,7 @@ import org.apache.dubbo.rpc.listener.CallbackListener;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * @author daofeng.xjf
@@ -22,17 +23,17 @@ public class CallbackListenerImpl implements CallbackListener {
 
     @Override
     public void receiveServerMsg(String msg) {
-        try {
-            Map<String,String> status  = gson.fromJson(msg, HashMap.class);
-            Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
-            Integer poolSize = Integer.parseInt(status.get("poolSize"));
-            Integer activeCount = Integer.parseInt(status.get("activeCount"));
-            String key = status.get("quota");
-            UserLoadBalance.weightMap.put(key,maxmumPoolSize-activeCount);
-        } catch (Exception e){
-            LOGGER.error(e);
-        }
 
+//        try {
+//            Map<String, String> status = gson.fromJson(msg, HashMap.class);
+//            Integer maxmumPoolSize = Integer.parseInt(status.get("maxmumPoolSize"));
+//            Integer poolSize = Integer.parseInt(status.get("poolSize"));
+//            Integer activeCount = Integer.parseInt(status.get("activeCount"));
+//            String key = status.get("quota");
+//            UserLoadBalance.weightMap.put(key, maxmumPoolSize - activeCount);
+//        } catch (Exception e) {
+//            LOGGER.error(e);
+//        }
         LOGGER.info("receive msg from server :" + msg);
     }
 

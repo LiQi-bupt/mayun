@@ -33,6 +33,11 @@ public class UserLoadBalance implements LoadBalance {
 
     public static ConcurrentHashMap<String,Integer> weightMap = new ConcurrentHashMap<>(16);
 
+    static {
+        weightMap.put("small",200);
+        weightMap.put("medium",450);
+        weightMap.put("large",600);
+    }
     private static int defaultWeight = 100;
     @Override
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
