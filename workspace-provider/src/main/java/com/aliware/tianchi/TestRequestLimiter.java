@@ -32,7 +32,11 @@ public class TestRequestLimiter implements RequestLimiter {
 
     private static ThreadPoolExecutor tp = null;
 
-    public static int maxPoolSize;
+    private static int maxPoolSize;
+
+    private static int threshold;
+
+    public static int fullThreshold;
 
     static {
         DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
@@ -44,19 +48,18 @@ public class TestRequestLimiter implements RequestLimiter {
             }
         }
         maxPoolSize = tp.getMaximumPoolSize();
+        threshold = maxPoolSize / 10;
+        fullThreshold = threshold * 8;
         LOGGER.info("core:{},max:{},pool:{},active:{},queue:{}", tp.getCorePoolSize(), tp.getMaximumPoolSize(),
                 tp.getPoolSize(), tp.getActiveCount(), tp.getQueue().size());
     }
 
     private int lastActiveTaskCount = 0;
 
+
+
     @Override
     public boolean tryAcquire(Request request, int activeTaskCount) {
-        float tmp = (float) Math.abs((activeTaskCount - lastActiveTaskCount))/ maxPoolSize;
-        if (tmp >= 0.1f || tmp <= -0.1f) {
-            CallbackServiceImpl.full = true;
-            lastActiveTaskCount = activeTaskCount;
-        }
         if (activeTaskCount  >= maxPoolSize){
             LOGGER.info(new Date().toString()+" refuse: maxPoolSize:{}, activeTaskCount:{},queue:{}",maxPoolSize,
                     tp.getActiveCount(),tp.getQueue().size());

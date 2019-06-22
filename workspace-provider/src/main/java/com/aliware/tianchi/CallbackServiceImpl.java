@@ -7,6 +7,10 @@ import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.store.DataStore;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 import org.apache.dubbo.rpc.service.CallbackService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.dc.pr.PRError;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -21,15 +25,33 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class CallbackServiceImpl implements CallbackService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CallbackServiceImpl.class);
+
     private static Gson gson = new Gson();
 
     private static long startTime = System.currentTimeMillis();
 
     private static int warmUpTime = 35*1000;
 
+    public static volatile boolean needReLoadBalance = false;
+
     public static volatile boolean full = false;
 
+    private static final int TYPE_RELOADBALANCE = 1;
+
+    private static final int TYPE_FULL = 2;
+
     private static ThreadPoolExecutor tp ;
+
+    private static int maxPoolSize;
+
+    private static int threshold;
+
+    public static int fullThreshold;
+
+    private static int lastActiveTaskCount = 0;
+
+    private int act;
 
     static {
         DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
@@ -40,32 +62,64 @@ public class CallbackServiceImpl implements CallbackService {
                 tp = (ThreadPoolExecutor) executor;
             }
         }
+        maxPoolSize = tp.getMaximumPoolSize();
+        threshold = maxPoolSize / 10;
+        fullThreshold = threshold * 8;
     }
 
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (full&&!listeners.isEmpty()) {
-                    for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
-                        try {
-                            Map<String, String> statusMap = new HashMap<String, String>(16);
-                            statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
-                            statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
-                            statusMap.put("activeCount", String.valueOf(tp.getActiveCount()));
-                            statusMap.put("quota", System.getProperty("quota"));
-                            entry.getValue().receiveServerMsg(gson.toJson(statusMap));
-                            full = false;
-                        } catch (Throwable t1) {
-                            listeners.remove(entry.getKey());
-                        }
-                    }
+                act = tp.getActiveCount();
+                int tmp = Math.abs(act - lastActiveTaskCount);
+                if (tmp > threshold) {
+                    needReLoadBalance = true;
                 }
+//                if (act >= fullThreshold){
+//                    full = true;
+//                }
+//                if (full&&!needReLoadBalance) {
+//                    sendMessage(TYPE_FULL);
+//                }
+                if (needReLoadBalance && !listeners.isEmpty()) {
+                    sendMessage(TYPE_RELOADBALANCE);
+                }
+                LOGGER.info("act:{},lastAct:{},emptyListener:{}",act,lastActiveTaskCount,listeners.isEmpty());
             }
-        }, 0, 1000);
+        }, 0, 5000);
+
     }
 
     private Timer timer = new Timer();
+
+    private void sendMessage(int type) {
+        for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
+            try {
+                Map<String, String> statusMap = new HashMap<String, String>(16);
+                statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
+                statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
+                statusMap.put("activeCount", String.valueOf(act));
+                statusMap.put("quota", System.getProperty("quota"));
+                entry.getValue().receiveServerMsg(gson.toJson(statusMap));
+                switch (type) {
+                    case TYPE_RELOADBALANCE:
+                        needReLoadBalance = false;
+                        break;
+                    case TYPE_FULL:
+                        if (act < TestRequestLimiter.fullThreshold) {
+                            full = false;
+                        }
+                        LOGGER.info("full:tmp:{},threshold:{},act:{}",act,fullThreshold,tp.getActiveCount());
+                        break;
+                }
+                lastActiveTaskCount = act;
+            } catch (Throwable t1) {
+               // listeners.remove(entry.getKey());
+                LOGGER.error("error! remove listener");
+            }
+        }
+    }
 
     /**
      * key: listener type
