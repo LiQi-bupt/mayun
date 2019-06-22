@@ -10,10 +10,7 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,7 +28,7 @@ public class UserLoadBalance implements LoadBalance {
 
     Random  random = new Random();
 
-    public static ConcurrentHashMap<String,Integer> weightMap = new ConcurrentHashMap<>(16);
+    public static HashMap<String,Integer> weightMap = new HashMap<>(16);
 
     private static long startTime = System.currentTimeMillis();
 
