@@ -27,35 +27,42 @@ public class CallbackServiceImpl implements CallbackService {
 
     private static int warmUpTime = 35*1000;
 
+    public static boolean full = false;
+
+    private static ThreadPoolExecutor tp ;
+
+    static {
+        DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
+        Map<String, Object> executors = dataStore.get(Constants.EXECUTOR_SERVICE_COMPONENT_KEY);
+        for (Map.Entry<String, Object> entry2 : executors.entrySet()) {
+            ExecutorService executor = (ExecutorService) entry2.getValue();
+            if (executor instanceof ThreadPoolExecutor) {
+                tp = (ThreadPoolExecutor) executor;
+            }
+        }
+    }
+
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (!listeners.isEmpty()) {
+                if (full&&!listeners.isEmpty()) {
                     for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
                         try {
-                            DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
-                            Map<String, Object> executors = dataStore.get(Constants.EXECUTOR_SERVICE_COMPONENT_KEY);
-                            ThreadPoolExecutor tp = null;
-                            for (Map.Entry<String, Object> entry2 : executors.entrySet()) {
-                                ExecutorService executor = (ExecutorService) entry2.getValue();
-                                if (executor instanceof ThreadPoolExecutor) {
-                                    tp = (ThreadPoolExecutor) executor;
-                                }
-                            }
                             Map<String, String> statusMap = new HashMap<String, String>(16);
                             statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
                             statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
                             statusMap.put("activeCount", String.valueOf(tp.getActiveCount()));
                             statusMap.put("quota", System.getProperty("quota"));
                             entry.getValue().receiveServerMsg(gson.toJson(statusMap));
+                            full = false;
                         } catch (Throwable t1) {
                             listeners.remove(entry.getKey());
                         }
                     }
                 }
             }
-        }, 0, 5000);
+        }, 0, 1000);
     }
 
     private Timer timer = new Timer();
@@ -69,6 +76,11 @@ public class CallbackServiceImpl implements CallbackService {
     @Override
     public void addListener(String key, CallbackListener listener) {
         listeners.put(key, listener);
-        listener.receiveServerMsg(new Date().toString()); // send notification for change
+        Map<String, String> statusMap = new HashMap<String, String>(16);
+        statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
+        statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
+        statusMap.put("activeCount", String.valueOf(tp.getActiveCount()));
+        statusMap.put("quota", System.getProperty("quota"));
+        listener.receiveServerMsg(gson.toJson(statusMap)); // send notification for change
     }
 }

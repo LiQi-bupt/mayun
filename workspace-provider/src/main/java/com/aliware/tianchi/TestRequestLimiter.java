@@ -48,9 +48,15 @@ public class TestRequestLimiter implements RequestLimiter {
                 tp.getPoolSize(), tp.getActiveCount(), tp.getQueue().size());
     }
 
+    private int lastActiveTaskCount = 0;
+
     @Override
     public boolean tryAcquire(Request request, int activeTaskCount) {
-        if (activeTaskCount + 1 >= maxPoolSize){
+        if ((float) Math.abs((activeTaskCount - lastActiveTaskCount)) / maxPoolSize >= 0.1f) {
+            CallbackServiceImpl.full = true;
+            lastActiveTaskCount = activeTaskCount;
+        }
+        if (activeTaskCount  >= maxPoolSize){
             LOGGER.info(new Date().toString()+" refuse: maxPoolSize:{}, activeTaskCount:{},queue:{}",maxPoolSize,
                     tp.getActiveCount(),tp.getQueue().size());
             return false;

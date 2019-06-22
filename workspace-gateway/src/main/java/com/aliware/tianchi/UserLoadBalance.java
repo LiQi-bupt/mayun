@@ -34,11 +34,11 @@ public class UserLoadBalance implements LoadBalance {
 
     private static int warmUpTime = 35*1000;
 
-    static {
-        weightMap.put("small",200);
-        weightMap.put("medium",450);
-        weightMap.put("large",600);
-    }
+//    static {
+//        weightMap.put("small",200);
+//        weightMap.put("medium",450);
+//        weightMap.put("large",650);
+//    }
     private static int defaultWeight = 100;
     @Override
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
@@ -90,7 +90,7 @@ public class UserLoadBalance implements LoadBalance {
         //预热时间30秒
 //        int uptime = (int) (System.currentTimeMillis() - startTime);
 //        if (uptime > 0 && uptime < warmUpTime) {
-//            weight = calculateWarmupWeight(uptime, warmUpTime, weight);
+//            weight = calculateWarmUpWeight(uptime, warmUpTime, weight);
 //        } else {
 //            CallbackListenerImpl.needWarmUP = false;
 //        }
@@ -100,7 +100,7 @@ public class UserLoadBalance implements LoadBalance {
     }
 
     //用于计算预热权重
-    static int calculateWarmupWeight(int uptime, int warmup, int weight) {
+    static int calculateWarmUpWeight(int uptime, int warmup, int weight) {
         int ww = (int) ((float) uptime / ((float) warmup / (float) weight));
         return ww < 1 ? 1 : (ww > weight ? weight : ww);
     }
