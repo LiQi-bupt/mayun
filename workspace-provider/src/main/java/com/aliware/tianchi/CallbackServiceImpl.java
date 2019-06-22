@@ -31,12 +31,11 @@ public class CallbackServiceImpl implements CallbackService {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if ((System.currentTimeMillis() - startTime) < warmUpTime && !listeners.isEmpty()) {
+                if (!listeners.isEmpty()) {
                     for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
                         try {
                             DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
                             Map<String, Object> executors = dataStore.get(Constants.EXECUTOR_SERVICE_COMPONENT_KEY);
-
                             ThreadPoolExecutor tp = null;
                             for (Map.Entry<String, Object> entry2 : executors.entrySet()) {
                                 ExecutorService executor = (ExecutorService) entry2.getValue();

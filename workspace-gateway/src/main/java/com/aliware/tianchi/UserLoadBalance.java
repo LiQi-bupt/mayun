@@ -91,25 +91,14 @@ public class UserLoadBalance implements LoadBalance {
             weight = defaultWeight;
         }
         //预热时间30秒
-        int uptime = (int) (System.currentTimeMillis() - startTime);
-        if (uptime > 0 && uptime < warmUpTime) {
-            weight = calculateWarmupWeight(uptime, warmUpTime, weight);
-        } else {
-            CallbackListenerImpl.needWarmUP = false;
-        }
-        LOGGER.info("weight :"+key+":"+weight);
-//        if (weight > 0) {
-//            long timestamp = invoker.getUrl().getParameter(Constants.REMOTE_TIMESTAMP_KEY, 0L);
-//            if (timestamp > 0L) {
-//                //提供者在线时长
-//                int uptime = (int) (System.currentTimeMillis() - timestamp);
-//                //预热时间默认10分钟
-//                int warmup = invoker.getUrl().getParameter(Constants.WARMUP_KEY, Constants.DEFAULT_WARMUP);
-//                if (uptime > 0 && uptime < warmup) {
-//                    weight = calculateWarmupWeight(uptime, warmup, weight);
-//                }
-//            }
+//        int uptime = (int) (System.currentTimeMillis() - startTime);
+//        if (uptime > 0 && uptime < warmUpTime) {
+//            weight = calculateWarmupWeight(uptime, warmUpTime, weight);
+//        } else {
+//            CallbackListenerImpl.needWarmUP = false;
 //        }
+        LOGGER.info("weight :"+key+":"+weight);
+
         return weight;
     }
 
