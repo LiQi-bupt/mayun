@@ -1,8 +1,8 @@
 package com.aliware.tianchi;
 
 import com.google.gson.Gson;
-import org.apache.dubbo.common.logger.Logger;
-import org.apache.dubbo.common.logger.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 
 import java.util.HashMap;
@@ -28,9 +28,15 @@ public class CallbackListenerImpl implements CallbackListener {
             Integer poolSize = Integer.parseInt(status.get("poolSize"));
             Integer activeCount = Integer.parseInt(status.get("activeCount"));
             String key = status.get("quota");
-            UserLoadBalance.weightMap.put(key, maxmumPoolSize - activeCount);
+            Integer newWeight = maxmumPoolSize - activeCount;
+            Integer oldWeight = UserLoadBalance.weightMap.get(key);
+            UserLoadBalance.totalWeight = (oldWeight == null ?
+                    UserLoadBalance.totalWeight - UserLoadBalance.defaultWeight + newWeight :
+                    UserLoadBalance.totalWeight - oldWeight + newWeight);
+            UserLoadBalance.weightMap.put(key, newWeight);
+            LOGGER.info("new weight:{}:{},total:{}",key,newWeight,UserLoadBalance.totalWeight);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(e.toString());
         }
         LOGGER.info("receive msg from server :" + msg);
     }

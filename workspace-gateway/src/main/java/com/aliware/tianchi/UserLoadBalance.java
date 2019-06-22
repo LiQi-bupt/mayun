@@ -34,12 +34,14 @@ public class UserLoadBalance implements LoadBalance {
 
     private static int warmUpTime = 35*1000;
 
+    public  static volatile int totalWeight = 300;
+
 //    static {
 //        weightMap.put("small",200);
 //        weightMap.put("medium",450);
 //        weightMap.put("large",650);
 //    }
-    private static int defaultWeight = 100;
+    public static final int defaultWeight = 100;
     @Override
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
 //        if (invokers == null || invokers.isEmpty())
@@ -54,34 +56,35 @@ public class UserLoadBalance implements LoadBalance {
     //让子类实现doSelect
     private  <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation){
         int length = invokers.size(); // Number of invokers
-        int totalWeight = 0; // The sum of weights
-        boolean sameWeight = true; // Every invoker has the same weight?
-        for (int i = 0; i < length; i++) {
-            int weight = getWeight(invokers.get(i), invocation);
-            totalWeight += weight; // Sum
-            if (sameWeight && i > 0
-                    && weight != getWeight(invokers.get(i - 1), invocation)) {
-                sameWeight = false;
-            }
-        }
+       // int totalWeight = ; // The sum of weights
+//        boolean sameWeight = true; // Every invoker has the same weight?
+//        for (int i = 0; i < length; i++) {
+//            int weight = getWeight(invokers.get(i), invocation);
+//            totalWeight += weight; // Sum
+//            if (sameWeight && i > 0
+//                    && weight != getWeight(invokers.get(i - 1), invocation)) {
+//                sameWeight = false;
+//            }
+//        }
         //如果提供者权重不一样，加权随机
-        if (totalWeight > 0 && !sameWeight) {
+        if (totalWeight > 0 ) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
             int offset = random.nextInt(totalWeight);
             // Return a invoker based on the random value.
-            for (int i = 0; i < length; i++) {
-                offset -= getWeight(invokers.get(i), invocation);
+            for (Invoker<T> tmpInvoker:invokers) {
+                offset -= getWeight(tmpInvoker);
                 if (offset < 0) {
-                    return invokers.get(i);
+                    return tmpInvoker;
                 }
             }
         }
         //如果提供者权重都一样，普通随机
         // If all invokers have the same weight value or totalWeight=0, return evenly.
-        return invokers.get(random.nextInt(length));}
+        return invokers.get(random.nextInt(length));
+    }
 
     //计算预热权重
-    protected int getWeight(Invoker<?> invoker, Invocation invocation) {
+    private int getWeight(Invoker<?> invoker) {
         String key = invoker.getUrl().getHost().split("-")[1];
         Integer weight = weightMap.get(key);
         if(weight == null){
@@ -94,7 +97,7 @@ public class UserLoadBalance implements LoadBalance {
 //        } else {
 //            CallbackListenerImpl.needWarmUP = false;
 //        }
-        LOGGER.info("weight :"+key+":"+weight);
+//        LOGGER.info("weight :"+key+":"+weight);
 
         return weight;
     }

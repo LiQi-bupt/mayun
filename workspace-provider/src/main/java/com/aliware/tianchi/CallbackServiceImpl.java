@@ -27,7 +27,7 @@ public class CallbackServiceImpl implements CallbackService {
 
     private static int warmUpTime = 35*1000;
 
-    public static boolean full = false;
+    public static volatile boolean full = false;
 
     private static ThreadPoolExecutor tp ;
 

@@ -52,7 +52,8 @@ public class TestRequestLimiter implements RequestLimiter {
 
     @Override
     public boolean tryAcquire(Request request, int activeTaskCount) {
-        if ((float) Math.abs((activeTaskCount - lastActiveTaskCount)) / maxPoolSize >= 0.1f) {
+        float tmp = (float) Math.abs((activeTaskCount - lastActiveTaskCount))/ maxPoolSize;
+        if (tmp >= 0.1f || tmp <= -0.1f) {
             CallbackServiceImpl.full = true;
             lastActiveTaskCount = activeTaskCount;
         }
