@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author daofeng.xjf
@@ -52,6 +53,8 @@ public class CallbackServiceImpl implements CallbackService {
 
     private int act;
 
+    private static volatile AtomicInteger inTimer = new AtomicInteger();
+
     static {
         DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();
         Map<String, Object> executors = dataStore.get(Constants.EXECUTOR_SERVICE_COMPONENT_KEY);
@@ -62,8 +65,9 @@ public class CallbackServiceImpl implements CallbackService {
             }
         }
         maxPoolSize = tp.getMaximumPoolSize();
-        threshold = maxPoolSize / 10;
+        threshold = maxPoolSize / 5;
         fullThreshold = threshold * 8;
+        inTimer.set(0);
     }
 
     public CallbackServiceImpl() {
@@ -73,10 +77,11 @@ public class CallbackServiceImpl implements CallbackService {
                 act = tp.getActiveCount();
                 int tmp = Math.abs(act - lastActiveTaskCount);
                 if (tmp > threshold) {
-                    if (!listeners.isEmpty()) {
+                    if (!listeners.isEmpty()&&inTimer.compareAndSet(0,1)) {
                         sendMessage(TYPE_RELOADBALANCE);
+                        LOGGER.info("act:{},lastAct:{},{}",act,lastActiveTaskCount,listeners.isEmpty());
+                        inTimer.compareAndSet(1,0);
                     }
-                    LOGGER.info("act:{},lastAct:{},{}",act,lastActiveTaskCount,listeners.isEmpty());
                 }
             }
         }, 0, 500);
@@ -91,6 +96,7 @@ public class CallbackServiceImpl implements CallbackService {
                 Map<String, String> statusMap = new HashMap<String, String>(16);
                 statusMap.put("maxmumPoolSize", String.valueOf(tp.getMaximumPoolSize()));
                 statusMap.put("poolSize", String.valueOf(tp.getPoolSize()));
+                act = tp.getActiveCount();
                 statusMap.put("activeCount", String.valueOf(act));
                 statusMap.put("quota", System.getProperty("quota"));
                 entry.getValue().receiveServerMsg(gson.toJson(statusMap));
