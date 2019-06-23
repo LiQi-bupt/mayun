@@ -52,16 +52,6 @@ public class UserLoadBalance implements LoadBalance {
     //让子类实现doSelect
     private  <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation){
         int length = invokers.size(); // Number of invokers
-       // int totalWeight = ; // The sum of weights
-//        boolean sameWeight = true; // Every invoker has the same weight?
-//        for (int i = 0; i < length; i++) {
-//            int weight = getWeight(invokers.get(i), invocation);
-//            totalWeight += weight; // Sum
-//            if (sameWeight && i > 0
-//                    && weight != getWeight(invokers.get(i - 1), invocation)) {
-//                sameWeight = false;
-//            }
-//        }
         //如果提供者权重不一样，加权随机
         if (totalWeight > 0 ) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class CallbackListenerImpl implements CallbackListener {
                         oldTotalWeight - oldWeight + newWeight);
                 UserLoadBalance.totalWeight = newTotalWeight;
                 UserLoadBalance.weightMap.put(key, newWeight);
-                LOGGER.info("new weight:{}:{},total:{}", key, newWeight, UserLoadBalance.totalWeight);
+                LOGGER.info(new Date()+" new weight:{}:{},total:{}", key, newWeight, UserLoadBalance.totalWeight);
             }
 
         } catch (Exception e) {
