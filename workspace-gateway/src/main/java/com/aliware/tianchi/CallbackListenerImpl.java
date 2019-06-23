@@ -29,12 +29,17 @@ public class CallbackListenerImpl implements CallbackListener {
             Integer activeCount = Integer.parseInt(status.get("activeCount"));
             String key = status.get("quota");
             Integer newWeight = maxmumPoolSize - activeCount;
-            Integer oldWeight = UserLoadBalance.weightMap.get(key);
-            UserLoadBalance.totalWeight = (oldWeight == null ?
-                    UserLoadBalance.totalWeight - UserLoadBalance.defaultWeight + newWeight :
-                    UserLoadBalance.totalWeight - oldWeight + newWeight);
-            UserLoadBalance.weightMap.put(key, newWeight);
-            LOGGER.info("new weight:{}:{},total:{}",key,newWeight,UserLoadBalance.totalWeight);
+            synchronized (CallbackListenerImpl.class) {
+                Integer oldWeight = UserLoadBalance.weightMap.get(key);
+                int oldTotalWeight = UserLoadBalance.totalWeight;
+                int newTotalWeight = (oldWeight == null ?
+                        oldTotalWeight - UserLoadBalance.defaultWeight + newWeight :
+                        oldTotalWeight - oldWeight + newWeight);
+                UserLoadBalance.totalWeight = newTotalWeight;
+                UserLoadBalance.weightMap.put(key, newWeight);
+                LOGGER.info("new weight:{}:{},total:{}", key, newWeight, UserLoadBalance.totalWeight);
+            }
+
         } catch (Exception e) {
             LOGGER.error(e.toString());
         }

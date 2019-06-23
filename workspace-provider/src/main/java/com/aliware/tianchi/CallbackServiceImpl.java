@@ -70,17 +70,16 @@ public class CallbackServiceImpl implements CallbackService {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-//                act = tp.getActiveCount();
-//                int tmp = Math.abs(act - lastActiveTaskCount);
-//                if (tmp > threshold) {
-//                    needReLoadBalance = true;
-//                }
-//                if (needReLoadBalance && !listeners.isEmpty()) {
-//                    sendMessage(TYPE_RELOADBALANCE);
-//                }
-//                LOGGER.info("act:{},lastAct:{},emptyListener:{}",act,lastActiveTaskCount,listeners.isEmpty());
+                act = tp.getActiveCount();
+                int tmp = Math.abs(act - lastActiveTaskCount);
+                if (tmp > threshold) {
+                    if (!listeners.isEmpty()) {
+                        sendMessage(TYPE_RELOADBALANCE);
+                    }
+                    LOGGER.info("act:{},lastAct:{},{}",act,lastActiveTaskCount,listeners.isEmpty());
+                }
             }
-        }, 0, 5000);
+        }, 0, 500);
 
     }
 
@@ -109,7 +108,7 @@ public class CallbackServiceImpl implements CallbackService {
                 lastActiveTaskCount = act;
             } catch (Throwable t1) {
                // listeners.remove(entry.getKey());
-                LOGGER.error("error! remove listener");
+                LOGGER.error("error! remove listener",t1);
             }
         }
     }
