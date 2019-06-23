@@ -70,21 +70,15 @@ public class CallbackServiceImpl implements CallbackService {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                act = tp.getActiveCount();
-                int tmp = Math.abs(act - lastActiveTaskCount);
-                if (tmp > threshold) {
-                    needReLoadBalance = true;
-                }
-//                if (act >= fullThreshold){
-//                    full = true;
+//                act = tp.getActiveCount();
+//                int tmp = Math.abs(act - lastActiveTaskCount);
+//                if (tmp > threshold) {
+//                    needReLoadBalance = true;
 //                }
-//                if (full&&!needReLoadBalance) {
-//                    sendMessage(TYPE_FULL);
+//                if (needReLoadBalance && !listeners.isEmpty()) {
+//                    sendMessage(TYPE_RELOADBALANCE);
 //                }
-                if (needReLoadBalance && !listeners.isEmpty()) {
-                    sendMessage(TYPE_RELOADBALANCE);
-                }
-                LOGGER.info("act:{},lastAct:{},emptyListener:{}",act,lastActiveTaskCount,listeners.isEmpty());
+//                LOGGER.info("act:{},lastAct:{},emptyListener:{}",act,lastActiveTaskCount,listeners.isEmpty());
             }
         }, 0, 5000);
 
