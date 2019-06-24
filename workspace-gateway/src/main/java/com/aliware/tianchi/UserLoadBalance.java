@@ -7,6 +7,7 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -26,9 +27,8 @@ public class UserLoadBalance implements LoadBalance {
 
     public static HashMap<String,Integer> weightMap = new HashMap<>(16);
 
-    private static long startTime = System.currentTimeMillis();
+    private HashMap<String,String> keyMap = new HashMap<>(16);
 
-    private static int warmUpTime = 35*1000;
 
     public  static volatile int totalWeight = 300;
 
@@ -81,7 +81,11 @@ public class UserLoadBalance implements LoadBalance {
 
     //计算预热权重
     private int getWeight(Invoker<?> invoker) {
-        String key = invoker.getUrl().getHost().split("-")[1];
+        String key = keyMap.get(invoker.getUrl().getHost());
+        if (StringUtils.isEmpty(key)){
+            key = invoker.getUrl().getHost().split("-")[1];
+            keyMap.put(invoker.getUrl().getHost(),key);
+        }
         Integer weight = weightMap.get(key);
         if(weight == null){
             weight = defaultWeight;

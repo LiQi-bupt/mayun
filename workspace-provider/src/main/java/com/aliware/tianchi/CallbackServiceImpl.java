@@ -67,9 +67,9 @@ public class CallbackServiceImpl implements CallbackService {
     }
 
     public CallbackServiceImpl() {
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
+//        timer.schedule(new TimerTask() {
+//            @Override
+//            public void run() {
 //                act = tp.getActiveCount();
 //                int tmp = Math.abs(act - lastActiveTaskCount);
 //                if (tmp > threshold) {
@@ -79,8 +79,8 @@ public class CallbackServiceImpl implements CallbackService {
 //                    sendMessage(TYPE_RELOADBALANCE);
 //                }
 //                LOGGER.info("act:{},lastAct:{},emptyListener:{}",act,lastActiveTaskCount,listeners.isEmpty());
-            }
-        }, 0, 5000);
+//            }
+//        }, 0, 5000);
 
     }
 
