@@ -67,7 +67,8 @@ public class UserLoadBalance implements LoadBalance {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
             int offset = random.nextInt(totalWeight);
             // Return a invoker based on the random value.
-            for (Invoker<T> tmpInvoker:invokers) {
+            for(int i=length-1;i>=0;i--){
+                Invoker<T> tmpInvoker = invokers.get(i);
                 offset -= getWeight(tmpInvoker);
                 if (offset < 0) {
                     return tmpInvoker;

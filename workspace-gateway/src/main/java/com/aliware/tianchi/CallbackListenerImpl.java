@@ -28,7 +28,7 @@ public class CallbackListenerImpl implements CallbackListener {
             Integer poolSize = Integer.parseInt(status.get("poolSize"));
             Integer activeCount = Integer.parseInt(status.get("activeCount"));
             String key = status.get("quota");
-            Integer newWeight = maxmumPoolSize - activeCount;
+            Integer newWeight = maxmumPoolSize;
             Integer oldWeight = UserLoadBalance.weightMap.get(key);
             UserLoadBalance.totalWeight = (oldWeight == null ?
                     UserLoadBalance.totalWeight - UserLoadBalance.defaultWeight + newWeight :
