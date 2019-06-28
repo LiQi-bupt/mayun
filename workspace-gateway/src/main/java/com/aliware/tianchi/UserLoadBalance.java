@@ -28,27 +28,13 @@ public class UserLoadBalance implements LoadBalance {
 
     public static HashMap<String,Integer> weightMap = new HashMap<>(16);
 
-    private static long startTime = System.currentTimeMillis();
-
-    private static int warmUpTime = 35*1000;
-
-    public  static volatile int totalWeight = 300;
+    public  static volatile AtomicInteger totalWeight = new AtomicInteger(0);
 
     public static volatile ConcurrentHashMap<String, AtomicInteger> taskMap = new ConcurrentHashMap<>(8);
 
-//    static {
-//        weightMap.put("small",200);
-//        weightMap.put("medium",450);
-//        weightMap.put("large",650);
-//    }
     public static final int defaultWeight = 100;
     @Override
     public <T> Invoker<T> select(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
-//        if (invokers == null || invokers.isEmpty())
-//            return null;
-//        //如果只有一个提供者直接返回，预热失效
-//        if (invokers.size() == 1)
-//            return invokers.get(0);
         return doSelect(invokers, url, invocation);
     }
 
@@ -57,9 +43,11 @@ public class UserLoadBalance implements LoadBalance {
     private  <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation){
         int length = invokers.size(); // Number of invokers
         //如果提供者权重不一样，加权随机
-        if (totalWeight > 0 ) {
+        int tw = totalWeight.get();
+        //LOGGER.info("totalWeight:{}",tw);
+        if (tw > 0) {
             // If (not every invoker has the same weight & at least one invoker's weight>0), select randomly based on totalWeight.
-            int offset = random.nextInt(totalWeight);
+            int offset = random.nextInt(tw);
             // Return a invoker based on the random value.
             for (Invoker<T> tmpInvoker:invokers) {
                 offset -= getWeight(tmpInvoker);
@@ -76,26 +64,14 @@ public class UserLoadBalance implements LoadBalance {
     //计算预热权重
     private int getWeight(Invoker<?> invoker) {
         String key = invoker.getUrl().getHost().split("-")[1];
-        Integer weight = weightMap.get(key);
-        if(weight == null){
+        Integer weight;
+        AtomicInteger atomicInteger = taskMap.get(key);
+        if(atomicInteger == null){
             weight = defaultWeight;
+        } else {
+            weight = atomicInteger.get();
         }
-        //预热时间30秒
-//        int uptime = (int) (System.currentTimeMillis() - startTime);
-//        if (uptime > 0 && uptime < warmUpTime) {
-//            weight = calculateWarmUpWeight(uptime, warmUpTime, weight);
-//        } else {
-//            CallbackListenerImpl.needWarmUP = false;
-//        }
-//        LOGGER.info("weight :"+key+":"+weight);
-
         return weight;
-    }
-
-    //用于计算预热权重
-    static int calculateWarmUpWeight(int uptime, int warmup, int weight) {
-        int ww = (int) ((float) uptime / ((float) warmup / (float) weight));
-        return ww < 1 ? 1 : (ww > weight ? weight : ww);
     }
 
 }

@@ -39,8 +39,7 @@ public class TestClientFilter implements Filter {
        // LOGGER.info("filter start resultstr:{},result:{},invoker:{},invocation:{}",result.toString(),result.getClass(),invoker.getClass(),invocation.getClass());
         String key = invoker.getUrl().getHost().split("-")[1];
         AtomicInteger target = UserLoadBalance.taskMap.get(key);
-        Integer max = UserLoadBalance.weightMap.get(key);
-        if (target != null && target.get() >= max - 1) {
+        if (target != null && target.get() <= 1) {
             CompletableFuture<Object> rcompletableFuture = CompletableFuture.supplyAsync(() -> {
 //                try {
 //                    while (true) {
@@ -54,10 +53,11 @@ public class TestClientFilter implements Filter {
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-                while (target.get() >= max - 1) {
+                while (target.get() <= 1) {
 
                 }
-                target.incrementAndGet();
+                target.decrementAndGet();
+                UserLoadBalance.totalWeight.decrementAndGet();
                 SimpleAsyncRpcResult simpleAsyncRpcResult = (SimpleAsyncRpcResult) invoker.invoke(invocation);
                 Integer value = null;
 
@@ -66,8 +66,9 @@ public class TestClientFilter implements Filter {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-              //  int taskCount = target.decrementAndGet();
-               // LOGGER.info("asyncResult value:{},taskCount",value,taskCount);
+                int t = target.incrementAndGet();
+                UserLoadBalance.totalWeight.incrementAndGet();
+             //   LOGGER.info("asyncResult value:{},taskCount", value, t);
                 return value;
             });
             RpcContext.getContext().setFuture(rcompletableFuture);
@@ -76,10 +77,11 @@ public class TestClientFilter implements Filter {
             return asyncRpcResult;
         }
         int nowTaskCount = 0;
-//        if (target != null) {
-//            nowTaskCount= target.incrementAndGet();
-//        }
-      //  LOGGER.info("syn return,task count:{},key:{}",nowTaskCount,key);
+        if (target != null) {
+            nowTaskCount = target.decrementAndGet();
+        }
+        UserLoadBalance.totalWeight.decrementAndGet();
+     // LOGGER.info("syn return,task count:{},key:{}",nowTaskCount,key);
         return invoker.invoke(invocation);
 
     }
@@ -88,8 +90,9 @@ public class TestClientFilter implements Filter {
     public Result onResponse(Result result, Invoker<?> invoker, Invocation invocation) {
         String key = invoker.getUrl().getHost().split("-")[1];
         AtomicInteger target = UserLoadBalance.taskMap.get(key);
-        //int nowTaskCount = target.decrementAndGet();
-       // LOGGER.info("onResponse key:{},taskCount:{},result:{}",key,nowTaskCount,result.getValue());
+        int nowTaskCount = target.incrementAndGet();
+        UserLoadBalance.totalWeight.incrementAndGet();
+        //LOGGER.info("onResponse key:{},taskCount:{},result:{}",key,nowTaskCount,result.getValue());
         return result;
     }
 

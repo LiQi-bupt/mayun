@@ -22,7 +22,7 @@ public class TestServerFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         try{
-            //LOGGER.info(new Date().toString()+ " " + String.valueOf(++count));
+            //LOGGER.info(String.valueOf(++count));
             Result result = invoker.invoke(invocation);
             return result;
         }catch (Exception e){
