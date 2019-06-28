@@ -9,6 +9,8 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.cluster.LoadBalance;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -31,6 +33,8 @@ public class UserLoadBalance implements LoadBalance {
     private static int warmUpTime = 35*1000;
 
     public  static volatile int totalWeight = 300;
+
+    public static volatile ConcurrentHashMap<String, AtomicInteger> taskMap = new ConcurrentHashMap<>(8);
 
 //    static {
 //        weightMap.put("small",200);

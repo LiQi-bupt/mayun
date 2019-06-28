@@ -8,6 +8,7 @@ import org.apache.dubbo.rpc.listener.CallbackListener;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author daofeng.xjf
@@ -29,7 +30,7 @@ public class CallbackListenerImpl implements CallbackListener {
             Integer poolSize = Integer.parseInt(status.get("poolSize"));
             Integer activeCount = Integer.parseInt(status.get("activeCount"));
             String key = status.get("quota");
-            Integer newWeight = maxmumPoolSize - activeCount;
+            Integer newWeight = maxmumPoolSize;
             synchronized (CallbackListenerImpl.class) {
                 Integer oldWeight = UserLoadBalance.weightMap.get(key);
                 int oldTotalWeight = UserLoadBalance.totalWeight;
@@ -38,6 +39,7 @@ public class CallbackListenerImpl implements CallbackListener {
                         oldTotalWeight - oldWeight + newWeight);
                 UserLoadBalance.totalWeight = newTotalWeight;
                 UserLoadBalance.weightMap.put(key, newWeight);
+                UserLoadBalance.taskMap.put(key,new AtomicInteger(0));
                 LOGGER.info(new Date()+" new weight:{}:{},total:{}", key, newWeight, UserLoadBalance.totalWeight);
             }
 
