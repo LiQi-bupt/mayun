@@ -66,20 +66,20 @@ public class TestClientFilter implements Filter {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                int taskCount = target.decrementAndGet();
-                LOGGER.info("asyncResult value:{},taskCount",value,taskCount);
+              //  int taskCount = target.decrementAndGet();
+               // LOGGER.info("asyncResult value:{},taskCount",value,taskCount);
                 return value;
             });
             RpcContext.getContext().setFuture(rcompletableFuture);
             SimpleAsyncRpcResult asyncRpcResult = new SimpleAsyncRpcResult(rcompletableFuture, false);
-            LOGGER.info("asyncResult return");
+            //LOGGER.info("asyncResult return");
             return asyncRpcResult;
         }
         int nowTaskCount = 0;
-        if (target != null) {
-            nowTaskCount= target.incrementAndGet();
-        }
-        LOGGER.info("syn return,task count:{},key:{}",nowTaskCount,key);
+//        if (target != null) {
+//            nowTaskCount= target.incrementAndGet();
+//        }
+      //  LOGGER.info("syn return,task count:{},key:{}",nowTaskCount,key);
         return invoker.invoke(invocation);
 
     }
@@ -88,8 +88,8 @@ public class TestClientFilter implements Filter {
     public Result onResponse(Result result, Invoker<?> invoker, Invocation invocation) {
         String key = invoker.getUrl().getHost().split("-")[1];
         AtomicInteger target = UserLoadBalance.taskMap.get(key);
-        int nowTaskCount = target.decrementAndGet();
-        LOGGER.info("onResponse key:{},taskCount:{},result:{}",key,nowTaskCount,result.getValue());
+        //int nowTaskCount = target.decrementAndGet();
+       // LOGGER.info("onResponse key:{},taskCount:{},result:{}",key,nowTaskCount,result.getValue());
         return result;
     }
 
